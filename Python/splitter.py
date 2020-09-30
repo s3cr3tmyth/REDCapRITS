@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 import re
-from fuzzymatcher import link_table, fuzzy_left_join
-import fuzzymatcher
 
 
 pd.set_option('display.max_columns', 28)
@@ -25,10 +23,10 @@ forms = ["repeating", "all"]
 primary_table_name = "sale"
 
 # Check to see if there were any repeating instruments
-# if (forms == "repeating" and "redcap_repeat_instrument" not in  v_names):
-#     print("There are no repeating instruments in this dataset.")
-# else:
-#     print("good to go")
+if (forms == "repeating" and "redcap_repeat_instrument" not in v_names):
+    print("There are no repeating instruments in this dataset.")
+else:
+    print("You are good to go")
 
 data.redcap_repeat_instrument = data.redcap_repeat_instrument.fillna("")
 
@@ -41,61 +39,66 @@ data.redcap_repeat_instrument = data.redcap_repeat_instrument.fillna("")
 
 # v_names and meta function
 
-fields = meta.loc[(meta['Field Type'] != "descriptive") & (meta['Field Type'] != "checkbox")
-, ['Field Name','Form Name']]
+def match_fields_to_form(meta, v_names):
 
-# print(fields)
+    fields = meta.loc[(meta['Field Type'] != "descriptive") & (meta['Field Type'] != "checkbox")
+    , ['Field Name','Form Name']]
 
-unique_form_names = meta["Form Name"].unique()
+    # print(fields)
 
-temp = [str(i)+ '_complete' for i in unique_form_names]
+    unique_form_names = meta["Form Name"].unique()
 
-# columns = ['field_name','form_name']
+    temp = [str(i)+ '_complete' for i in unique_form_names]
 
-form_complete_fields = pd.DataFrame(
-    {'Field Name': temp,
-     'Form Name': unique_form_names
-    })
+    # columns = ['field_name','form_name']
 
-# print(form_complete_fields)
+    form_complete_fields = pd.DataFrame(
+        {'Field Name': temp,
+        'Form Name': unique_form_names
+        })
 
-fields = fields.append(form_complete_fields, ignore_index=True)
+    # print(form_complete_fields)
 
-# print(fields)
+    fields = fields.append(form_complete_fields, ignore_index=True)
 
-temp2 = [str(i)+ '_timestamp' for i in unique_form_names]
+    # print(fields)
 
-# print(temp2)
+    temp2 = [str(i)+ '_timestamp' for i in unique_form_names]
 
-timestamps = [x for x in v_names if x in temp2]
+    # print(temp2)
 
-
-if len(timestamps):
-    timestamp_fields = pd.DataFrame(
-    {'Field Name': timestamps,
-     'Form Name': re.sub("_timestamp$", "", timestamps)
-    })
-    fields = fields.append(timestamp_fields, ignore_index=True)
+    timestamps = [x for x in v_names if x in temp2]
 
 
-
-if (any(meta['Field Type'] == "checkbox")):
-    checkbox_basenames = meta.loc[(meta['Field Type'] == "checkbox"), ['Field Name','Form Name']]
-    temp3 = [str for str in v_names if
-             any(sub in str for sub in checkbox_basenames['Field Name'].to_list())] 
-    checkbox_fields = pd.DataFrame(
-    {'Field Name': temp3
-    })
-    checkbox_fields['F_dummy'] = checkbox_fields['Field Name'].str.split('___',expand=True)[0]
-    zz = checkbox_fields.merge(checkbox_basenames, left_on=['F_dummy'],right_on=['Field Name'], how='left')
-    zz = zz.drop(['F_dummy','Field Name_y'],axis = 1)
-    zz = zz.rename(columns={"Field Name_x": "Field Name"})
-    
-    fields = fields.append(zz, ignore_index=True)
+    if len(timestamps):
+        timestamp_fields = pd.DataFrame(
+        {'Field Name': timestamps,
+        'Form Name': re.sub("_timestamp$", "", timestamps)
+        })
+        fields = fields.append(timestamp_fields, ignore_index=True)
 
 
+
+    if (any(meta['Field Type'] == "checkbox")):
+        checkbox_basenames = meta.loc[(meta['Field Type'] == "checkbox"), ['Field Name','Form Name']]
+        temp3 = [str for str in v_names if
+                any(sub in str for sub in checkbox_basenames['Field Name'].to_list())] 
+        checkbox_fields = pd.DataFrame(
+        {'Field Name': temp3
+        })
+        checkbox_fields['F_dummy'] = checkbox_fields['Field Name'].str.split('___',expand=True)[0]
+        zz = checkbox_fields.merge(checkbox_basenames, left_on=['F_dummy'],right_on=['Field Name'], how='left')
+        zz = zz.drop(['F_dummy','Field Name_y'],axis = 1)
+        zz = zz.rename(columns={"Field Name_x": "Field Name"})
+        
+        fields = fields.append(zz, ignore_index=True)
+
+    return fields
 
 ### End of function I 
+
+fields = match_fields_to_form(meta, v_names)
+
 
 r = re.compile("^redcap_(?!(repeat)).*")
 newlist = list(filter(r.match, v_names))
@@ -112,36 +115,23 @@ subtables = list(filter(None, subtables))
 
 
 # out = dict(iter(data.groupby('redcap_repeat_instrument')))
-# vsls =[] 
-# for vsl, new_df in df.groupby(level=0): 
-#     vsls.append(new_df)
 
 # out = list(data.groupby('redcap_repeat_instrument'))
 # out = data.groupby('redcap_repeat_instrument')  
 # out = [out.get_group(x) for x in out.groups]
 
 cname = []
-# d = {}
+
 
 for out, n in data.groupby('redcap_repeat_instrument'):
     cname.append(out)
     primary_table_index = out.index("")
-    # d[n] = pd.DataFrame()
 
 if (forms == "repeating" and primary_table_name in subtables):
     print("The label given to the primary table is already used by a repeating instrument. The primary table label will be left blank.")
     primary_table_name = ""
 elif (primary_table_name > ""): 
     primary_table_name = cname[primary_table_index]
-
-
-# print(primary_table_name)
-
-# x = fields[~fields.iloc[:,1].isin(subtables)]
-# x = universal_fields + list(x.iloc[:,0])
-# out_fields = list(set([v_names.index(i) for i in x]))
-
-# print(out_fields)
 
 
 for i in cname:
@@ -153,18 +143,17 @@ for i in cname:
         out_fields = list(set([v_names.index(i) for i in x]))
         table1 = n.iloc[: , out_fields]
 
-    # else: 
-    #     n = data[data['redcap_repeat_instrument'] == i]
-    #     x = fields[fields.iloc[:,1] == i]
-    #     x = universal_fields + repeat_instrument_fields + list(x.iloc[:,0])
-    #     out_fields = list(set([v_names.index(i) for i in x]))
-    #     table1 = n.iloc[: , out_fields]
+    else: 
+        n = data[data['redcap_repeat_instrument'] == i]
+        x = fields[fields.iloc[:,1] == i]
+        x = universal_fields + repeat_instrument_fields + list(x.iloc[:,0])
+        out_fields = list(set([v_names.index(i) for i in x]))
+        table1 = n.iloc[: , out_fields]
 
-# xxx = list(table1.columns)
 
 # function II
 
-def func2(table, universal_fields, fields):
+def split_non_repeating_forms(table, universal_fields, fields):
     xxx = list(table.columns)
     off = []    
     forms = fields.iloc[:, 1].unique()
@@ -190,9 +179,9 @@ def func2(table, universal_fields, fields):
  
 if (forms == all):
 
-    tables = func2(table1, universal_fields, fields[~fields.iloc[:,1].isin(subtables)])
+    tables = split_non_repeating_forms(table1, universal_fields, fields[~fields.iloc[:,1].isin(subtables)])
 
 else:
-    tables = func2(data, universal_fields, fields)
+    tables = split_non_repeating_forms(data, universal_fields, fields)
 
 print(tables)
