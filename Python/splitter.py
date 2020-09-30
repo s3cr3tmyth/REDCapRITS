@@ -12,7 +12,7 @@ meta = pd.read_csv("../R/tests/testthat/data/ExampleProject_DataDictionary_2018-
 # print(data.head(10))
 # print("\n",meta.head(10))
 
-# df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
+# data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
 
 v_names = list(data.columns)
 m_names = list(meta.columns)
@@ -143,12 +143,12 @@ for i in cname:
         out_fields = list(set([v_names.index(i) for i in x]))
         table1 = n.iloc[: , out_fields]
 
-    else: 
-        n = data[data['redcap_repeat_instrument'] == i]
-        x = fields[fields.iloc[:,1] == i]
-        x = universal_fields + repeat_instrument_fields + list(x.iloc[:,0])
-        out_fields = list(set([v_names.index(i) for i in x]))
-        table1 = n.iloc[: , out_fields]
+    # else: 
+    #     n = data[data['redcap_repeat_instrument'] == i]
+    #     x = fields[fields.iloc[:,1] == i]
+    #     x = universal_fields + repeat_instrument_fields + list(x.iloc[:,0])
+    #     out_fields = list(set([v_names.index(i) for i in x]))
+    #     table1 = n.iloc[: , out_fields]
 
 
 # function II
@@ -177,11 +177,12 @@ def split_non_repeating_forms(table, universal_fields, fields):
 
 # funct II end
  
-if (forms == all):
+# if (forms == all):
 
-    tables = split_non_repeating_forms(table1, universal_fields, fields[~fields.iloc[:,1].isin(subtables)])
+tables = split_non_repeating_forms(table1, universal_fields, fields[~fields.iloc[:,1].isin(subtables)])
 
-else:
-    tables = split_non_repeating_forms(data, universal_fields, fields)
+# else:
+
+#     tables = split_non_repeating_forms(data, universal_fields, fields)
 
 print(tables)
