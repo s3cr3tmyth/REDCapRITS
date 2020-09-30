@@ -113,7 +113,7 @@ REDCap_split <- function(records,
   names(metadata) <- metadata_names
 
   # Make sure that no metadata columns are factors
-  metadata <- rapply(metadata, as.character, classes = "factor", how = "replace")
+  metadata <-  rapply(metadata, as.character, classes = "factor", how = "replace")
 
   # Find the fields and associated form
   fields <- match_fields_to_form(metadata, vars_in_data)
