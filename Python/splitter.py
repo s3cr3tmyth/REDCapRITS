@@ -12,17 +12,18 @@ import sys
 def splitter(data, meta, primary_table_name, forms):
 
     def process_input(data):
+        reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
+        installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
+        
         if isinstance(data, pd.DataFrame):
             return data
-        # elif:
-        #     reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
-        #     installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
-        #     if 'jsonlite' in installed_packages:
-        #         print('JSON package is installed')
-        #         import jsonlite
-        #         return jsonlite.fromJSON(data)
-        #     else:
-        #         print('The package 'jsonlite' is needed to convert')
+        elif 'jsonlite' in installed_packages:
+            print('JSON package is installed')
+            import jsonlite
+            data = jsonlite.fromJSON(data)
+            return data
+        # else:
+        #     print('The package 'jsonlite' is needed to convert')
         else:
             print(" Input must be a 'data.frame' or a 'response' or a 'character' vector containing JSON.")
 

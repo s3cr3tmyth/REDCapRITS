@@ -232,3 +232,6 @@ names(out[[primary_table_index]])
 length(out[[primary_table_index]])
 length(x[[2]])
 
+y = out[-primary_table_index]
+y
+
